@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Pembelajaran 3D - Multiplayer</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        canvas { display: block; }
+        #info {
+            position: absolute; top: 10px; left: 10px; color: white;
+            background: rgba(0, 0, 0, 0.6); padding: 10px 15px; border-radius: 8px;
+        }
+        #quiz-modal {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white; color: black;
+            padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
+            text-align: center; width: 350px; z-index: 10;
+        }
+        .quiz-btn {
+            display: block; width: 100%; padding: 10px; margin: 8px 0;
+            background: #4CAF50; color: white; border: none; border-radius: 5px;
+            cursor: pointer; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="info">Gunakan **Tombol Panah** untuk berjalan ke balok **Kuning**!</div>
+
+    <div id="quiz-modal">
+        <h3 id="quiz-question">Pertanyaan Kuis?</h3>
+        <button class="quiz-btn" onclick="checkAnswer('A')">A. Pilihan A</button>
+        <button class="quiz-btn" onclick="checkAnswer('B')">B. Pilihan B</button>
+        <button class="quiz-btn" onclick="checkAnswer('C')">C. Pilihan C</button>
+        <p id="quiz-feedback" style="font-weight: bold; margin-top: 10px;"></p>
+    </div>
+
+    <!-- Pustaka 3D & Socket.io Multiplayer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const socket = io(); // Menghubungkan ke Server Multiplayer
+
+        // 1. SETUP RUANG 3D
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. LANTAI & CHECKPOINT KUIS
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(20, 60),
+            new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide })
+        );
+        floor.rotation.x = Math.PI / 2;
+        scene.add(floor);
+
+        const checkpoint = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 0.1, 3),
+            new THREE.MeshBasicMaterial({ color: 0xFFD700 })
+        );
+        checkpoint.position.set(0, 0.05, -10);
+        scene.add(checkpoint);
+
+        camera.position.set(0, 3, 5);
+
+        // 3. PENGELOLAAN PEMAIN MULTIPLAYER
+        const otherPlayers = {}; // Menyimpan objek 3D pemain lain
+        let player; // Karakter lokal (milik sendiri)
+
+        // Fungsi membuat mesh karakter (Kotak)
+        function createPlayerMesh(color = 0x4CAF50) {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.MeshBasicMaterial({ color: color })
+            );
+            mesh.position.y = 0.5;
+            return mesh;
+        }
+
+        // Menerima data semua pemain saat pertama kali masuk
+        socket.on('currentPlayers', (players) => {
+            Object.keys(players).forEach((id) => {
+                if (id === socket.id) {
+                    // Karakter milik kita sendiri (Hijau)
+                    player = createPlayerMesh(0x4CAF50);
+                    player.position.set(players[id].x, players[id].y, players[id].z);
+                    scene.add(player);
+                } else {
+                    // Karakter siswa lain (Biru)
+                    addOtherPlayer(id, players[id]);
+                }
+            });
+        });
+
+        // Jika ada siswa baru masuk
+        socket.on('newPlayer', (playerInfo) => {
+            addOtherPlayer(playerInfo.id, playerInfo.pos);
+        });
+
+        function addOtherPlayer(id, pos) {
+            const other = createPlayerMesh(0x2196F3); // Warna Biru untuk teman
+            other.position.set(pos.x, pos.y, pos.z);
+            scene.add(other);
+            otherPlayers[id] = other;
+        }
+
+        // Jika ada posisi siswa lain yang berubah
+        socket.on('playerMoved', (playerInfo) => {
+            if (otherPlayers[playerInfo.id]) {
+                otherPlayers[playerInfo.id].position.set(playerInfo.pos.x, playerInfo.pos.y, playerInfo.pos.z);
+            }
+        });
+
+        // Jika ada siswa yang keluar
+        socket.on('playerDisconnected', (id) => {
+            if (otherPlayers[id]) {
+                scene.remove(otherPlayers[id]);
+                delete otherPlayers[id];
+            }
+        });
+
+        // 4. KONTROL GERAKAN & LOGIKA GAME
+        const keys = {};
+        let canMove = true;
+        let quizActive = false;
+        let checkpointPassed = false;
+
+        window.addEventListener('keydown', (e) => { if (canMove) keys[e.key] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function resetKeys() {
+            for (let key in keys) keys[key] = false;
+        }
+
+        const speed = 0.1;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (canMove && player) {
+                let moved = false;
+                if (keys['ArrowUp']) { player.position.z -= speed; moved = true; }
+                if (keys['ArrowDown']) { player.position.z += speed; moved = true; }
+                if (keys['ArrowLeft']) { player.position.x -= speed; moved = true; }
+                if (keys['ArrowRight']) { player.position.x += speed; moved = true; }
+
+                // Jika bergerak, kirim posisi baru ke server
+                if (moved) {
+                    socket.emit('playerMovement', {
+                        x: player.position.x,
+                        y: player.position.y,
+                        z: player.position.z
+                    });
+                }
+
+                camera.position.x = player.position.x;
+                camera.position.z = player.position.z + 5;
+                camera.lookAt(player.position);
+            }
+
+            // Cek Checkpoint Kuis
+            if (player && !quizActive && !checkpointPassed && 
+                Math.abs(player.position.x - checkpoint.position.x) < 1.5 && 
+                Math.abs(player.position.z - checkpoint.position.z) < 1.5) {
+                triggerQuiz();
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 5. KUIS POP-UP
+        function triggerQuiz() {
+            quizActive = true;
+            canMove = false;
+            resetKeys();
+            document.getElementById('quiz-modal').style.display = 'block';
+            document.getElementById('quiz-question').innerText = "Berapakah hasil dari 5 + 5 x 2 ?";
+            const buttons = document.querySelectorAll('.quiz-btn');
+            buttons[0].innerText = "A. 20";
+            buttons[1].innerText = "B. 15";
+            buttons[2].innerText = "C. 10";
+        }
+
+        function checkAnswer(option) {
+            const feedback = document.getElementById('quiz-feedback');
+            if (option === 'B') {
+                feedback.style.color = "green";
+                feedback.innerText = "Benar! Pintar sekali!";
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').style.display = 'none';
+                    checkpointPassed = true;
+                    scene.remove(checkpoint);
+                    feedback.innerText = "";
+                    quizActive = false;
+                    canMove = true;
+                    resetKeys();
+                    window.focus();
+                }, 1000);
+            } else {
+                feedback.style.color = "red";
+                feedback.innerText = "Coba lagi ya!";
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+</body>
+</html>
