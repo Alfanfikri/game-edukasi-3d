@@ -504,7 +504,7 @@
             }
         });
 
-        // -------------------------------------------------------------
+       // -------------------------------------------------------------
         // 5. KAMERA 360 DERAJAT & KONTROL INPUT
         // -------------------------------------------------------------
         let cameraYaw = 0;      
@@ -513,9 +513,9 @@
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
 
-        // Mouse Rotation
+        // Mouse Rotation (PC)
         window.addEventListener('mousedown', (e) => {
-            if (e.target.closest('#touch-controls') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+            if (e.target.closest('#touch-controls') || e.target.closest('#fullscreen-btn') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
             isDragging = true;
             previousMousePosition = { x: e.clientX, y: e.clientY };
         });
@@ -534,28 +534,55 @@
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // Touch Rotation (Diperbarui agar tidak bentrok dengan D-Pad di HP)
+        // Touch Rotation (Multi-Touch untuk HP - Mendukung Jalan & Geser Kamera Bersamaan)
+        let cameraTouchId = null;
+
         window.addEventListener('touchstart', (e) => {
-            if (e.target.closest('#touch-controls') || e.target.closest('#fullscreen-btn') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-            if (e.touches.length === 1) {
-                isDragging = true;
-                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const target = touch.target;
+
+                if (!target.closest('#touch-controls') && 
+                    !target.closest('#fullscreen-btn') && 
+                    target.tagName !== 'BUTTON' && 
+                    target.tagName !== 'INPUT') {
+                    
+                    cameraTouchId = touch.identifier;
+                    isDragging = true;
+                    previousMousePosition = { x: touch.clientX, y: touch.clientY };
+                    break;
+                }
             }
         });
 
         window.addEventListener('touchmove', (e) => {
-            if (!isDragging || e.touches.length !== 1) return;
-            const deltaX = e.touches[0].clientX - previousMousePosition.x;
-            const deltaY = e.touches[0].clientY - previousMousePosition.y;
+            if (!isDragging || cameraTouchId === null) return;
 
-            cameraYaw -= deltaX * 0.006;
-            cameraPitch += deltaY * 0.006;
-            cameraPitch = Math.max(0.05, Math.min(Math.PI / 2.2, cameraPitch));
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === cameraTouchId) {
+                    const deltaX = touch.clientX - previousMousePosition.x;
+                    const deltaY = touch.clientY - previousMousePosition.y;
 
-            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    cameraYaw -= deltaX * 0.006;
+                    cameraPitch += deltaY * 0.006;
+                    cameraPitch = Math.max(0.05, Math.min(Math.PI / 2.2, cameraPitch));
+
+                    previousMousePosition = { x: touch.clientX, y: touch.clientY };
+                    break;
+                }
+            }
         });
 
-        window.addEventListener('touchend', () => { isDragging = false; });
+        window.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === cameraTouchId) {
+                    isDragging = false;
+                    cameraTouchId = null;
+                    break;
+                }
+            }
+        });
 
         // Input Keyboard & Touch D-Pad
         const keys = { Up: false, Down: false, Left: false, Right: false };
@@ -602,7 +629,6 @@
                 playerObj.rightArmPivot.rotation.x = 0;
             }
         }
-
         // -------------------------------------------------------------
         // 6. MAIN LOOP & GERAKAN SEARAH KAMERA
         // -------------------------------------------------------------
