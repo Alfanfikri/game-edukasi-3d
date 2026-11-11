@@ -637,7 +637,7 @@
                     forward.normalize();
 
                     const right = new THREE.Vector3();
-                    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).negate();
+                    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)); // Dibalik agar tidak terbalik
 
                     // Hitung Arah Gerak Dunia berdasarkan Input
                     const moveDirection = new THREE.Vector3();
