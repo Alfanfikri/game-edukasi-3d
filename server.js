@@ -15,19 +15,18 @@ const players = {};
 io.on('connection', (socket) => {
     console.log('Siswa terhubung dengan ID:', socket.id);
 
-    // Menerima event saat player menyetujui/mengisi nama
     socket.on('joinGame', (playerName) => {
         players[socket.id] = {
             id: socket.id,
             name: playerName || `Siswa ${Math.floor(Math.random() * 899 + 100)}`,
-            x: (Math.random() - 0.5) * 4,
-            y: 0.5,
-            z: 0
+            x: (Math.random() - 0.5) * 10,
+            y: 0,
+            z: (Math.random() - 0.5) * 10,
+            ry: 0,
+            isMoving: false
         };
 
-        // Kirim list player yang sudah ada ke player baru
         socket.emit('currentPlayers', players);
-        // Informasikan ke player lain ada player baru
         socket.broadcast.emit('newPlayer', players[socket.id]);
     });
 
@@ -36,6 +35,8 @@ io.on('connection', (socket) => {
             players[socket.id].x = movementData.x;
             players[socket.id].y = movementData.y;
             players[socket.id].z = movementData.z;
+            players[socket.id].ry = movementData.ry;
+            players[socket.id].isMoving = movementData.isMoving;
             socket.broadcast.emit('playerMoved', { id: socket.id, pos: movementData });
         }
     });
