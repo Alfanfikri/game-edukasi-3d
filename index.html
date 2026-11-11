@@ -2,122 +2,392 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Pembelajaran 3D - Multiplayer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Game Pembelajaran 3D - Dunia Petualangan</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
-        canvas { display: block; }
-        #info {
-            position: absolute; top: 10px; left: 10px; color: white;
-            background: rgba(0, 0, 0, 0.6); padding: 10px 15px; border-radius: 8px;
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
         }
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+        }
+        canvas { display: block; }
+
+        /* Modal Input Nama */
+        #name-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .name-box {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .name-box h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .name-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+        }
+        .name-box input:focus {
+            border-color: #4CAF50;
+        }
+        .name-box button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .name-box button:hover {
+            background: #45a049;
+        }
+
+        /* Info Card Upper Left */
+        #info {
+            position: absolute;
+            top: 15px; left: 15px;
+            color: white;
+            background: rgba(0, 0, 0, 0.65);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Quiz Modal */
         #quiz-modal {
-            display: none; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); background: white; color: black;
-            padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
-            text-align: center; width: 350px; z-index: 10;
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            color: #333;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            z-index: 10;
+            border: 3px solid #FFD700;
+        }
+        #quiz-question {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #2c3e50;
         }
         .quiz-btn {
-            display: block; width: 100%; padding: 10px; margin: 8px 0;
-            background: #4CAF50; color: white; border: none; border-radius: 5px;
-            cursor: pointer; font-size: 16px;
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.1s, background 0.2s;
         }
+        .quiz-btn:active {
+            transform: scale(0.98);
+        }
+        .quiz-btn:hover {
+            background: #2980b9;
+        }
+        #quiz-feedback {
+            font-weight: bold;
+            margin-top: 12px;
+            font-size: 16px;
+        }
+
+        /* Touch Controls D-Pad (Mobile) */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            z-index: 5;
+        }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+            touch-action: manipulation;
+            backdrop-filter: blur(4px);
+        }
+        .touch-btn:active {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+        }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
     </style>
 </head>
 <body>
 
-    <div id="info">Gunakan **Tombol Panah** untuk berjalan ke balok **Kuning**!</div>
+    <!-- Modal Masukkan Nama -->
+    <div id="name-modal">
+        <div class="name-box">
+            <h2>Petualangan Belajar</h2>
+            <p>Masukkan namamu untuk bergabung:</p>
+            <input type="text" id="player-name-input" placeholder="Nama / Panggilan..." maxlength="12" />
+            <button onclick="startGame()">Mulai Bermain</button>
+        </div>
+    </div>
+
+    <!-- UI Game -->
+    <div id="info">Petunjuk: Jalan ke balok **Kuning** untuk kuis!</div>
 
     <div id="quiz-modal">
         <h3 id="quiz-question">Pertanyaan Kuis?</h3>
         <button class="quiz-btn" onclick="checkAnswer('A')">A. Pilihan A</button>
         <button class="quiz-btn" onclick="checkAnswer('B')">B. Pilihan B</button>
         <button class="quiz-btn" onclick="checkAnswer('C')">C. Pilihan C</button>
-        <p id="quiz-feedback" style="font-weight: bold; margin-top: 10px;"></p>
+        <p id="quiz-feedback"></p>
     </div>
 
-    <!-- Pustaka 3D & Socket.io Multiplayer -->
+    <!-- Touch D-Pad untuk HP -->
+    <div id="touch-controls">
+        <div class="touch-btn" id="btn-up">▲</div>
+        <div class="touch-btn" id="btn-left">◄</div>
+        <div class="touch-btn" id="btn-right">►</div>
+        <div class="touch-btn" id="btn-down">▼</div>
+    </div>
+
+    <!-- Library Three.js & Socket.io -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
-        const socket = io(); // Menghubungkan ke Server Multiplayer
+        const socket = io();
 
-        // 1. SETUP RUANG 3D
+        // 1. SCENE & CAMERA SETUP
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
+        scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 60);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // 2. LANTAI & CHECKPOINT KUIS
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(20, 60),
-            new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide })
-        );
-        floor.rotation.x = Math.PI / 2;
-        scene.add(floor);
+        // LIGHTING
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
 
-        const checkpoint = new THREE.Mesh(
-            new THREE.BoxGeometry(3, 0.1, 3),
-            new THREE.MeshBasicMaterial({ color: 0xFFD700 })
-        );
-        checkpoint.position.set(0, 0.05, -10);
-        scene.add(checkpoint);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        dirLight.position.set(20, 40, 20);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
 
-        camera.position.set(0, 3, 5);
+        // 2. WORLD DECORATION (Jalan, Rumput, Pohon, Rumah)
+        // Rumput Utama
+        const groundGeo = new THREE.PlaneGeometry(100, 100);
+        const groundMat = new THREE.MeshLambertMaterial({ color: 0x55aa55 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.01;
+        scene.add(ground);
 
-        // 3. PENGELOLAAN PEMAIN MULTIPLAYER
-        const otherPlayers = {}; // Menyimpan objek 3D pemain lain
-        let player; // Karakter lokal (milik sendiri)
+        // Jalan Lintasan
+        const pathGeo = new THREE.PlaneGeometry(10, 80);
+        const pathMat = new THREE.MeshLambertMaterial({ color: 0xd2b48c });
+        const pathMesh = new THREE.Mesh(pathGeo, pathMat);
+        pathMesh.rotation.x = -Math.PI / 2;
+        scene.add(pathMesh);
 
-        // Fungsi membuat mesh karakter (Kotak)
-        function createPlayerMesh(color = 0x4CAF50) {
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 1, 1),
-                new THREE.MeshBasicMaterial({ color: color })
-            );
-            mesh.position.y = 0.5;
-            return mesh;
+        // Helper Fungsi Membuat Pohon
+        function createTree(x, z) {
+            const treeGroup = new THREE.Group();
+            // Batang
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1;
+            treeGroup.add(trunk);
+
+            // Daun (Konus)
+            const leavesGeo = new THREE.ConeGeometry(1.5, 3, 8);
+            const leavesMat = new THREE.MeshLambertMaterial({ color: 0x2e8b57 });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 3;
+            treeGroup.add(leaves);
+
+            treeGroup.position.set(x, 0, z);
+            scene.add(treeGroup);
         }
 
-        // Menerima data semua pemain saat pertama kali masuk
+        // Helper Fungsi Membuat Rumah
+        function createHouse(x, z, color = 0xe74c3c) {
+            const houseGroup = new THREE.Group();
+
+            // Badan Rumah
+            const bodyGeo = new THREE.BoxGeometry(3, 2.5, 3);
+            const bodyMat = new THREE.MeshLambertMaterial({ color: 0xfdfefe });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.25;
+            houseGroup.add(body);
+
+            // Atap
+            const roofGeo = new THREE.ConeGeometry(2.6, 1.8, 4);
+            const roofMat = new THREE.MeshLambertMaterial({ color: color });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 3.4;
+            roof.rotation.y = Math.PI / 4;
+            houseGroup.add(roof);
+
+            houseGroup.position.set(x, 0, z);
+            scene.add(houseGroup);
+        }
+
+        // Menebar Pohon & Rumah
+        for (let i = -35; i <= 35; i += 10) {
+            createTree(-8 - Math.random() * 4, i);
+            createTree(8 + Math.random() * 4, i);
+        }
+        createHouse(-9, -15, 0xe74c3c);
+        createHouse(9, -5, 0x3498db);
+        createHouse(-9, 15, 0xf1c40f);
+
+        // Checkpoint Kuis (Balok Kuning)
+        const checkpoint = new THREE.Mesh(
+            new THREE.BoxGeometry(4, 0.2, 4),
+            new THREE.MeshLambertMaterial({ color: 0xFFD700 })
+        );
+        checkpoint.position.set(0, 0.1, -10);
+        scene.add(checkpoint);
+
+        // 3. CANVAS NAME TAG GENERATOR
+        function createNameSprite(nameText) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.roundRect(10, 10, 236, 44, 10);
+            ctx.fill();
+
+            ctx.font = 'Bold 22px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(nameText, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(3, 0.75, 1);
+            sprite.position.y = 1.5; // Melayang di atas kepala
+            return sprite;
+        }
+
+        // 4. MULTIPLAYER LOGIC
+        const otherPlayers = {};
+        let player;
+        let myName = "";
+
+        function createPlayerMesh(color = 0x4CAF50, name = "Player") {
+            const group = new THREE.Group();
+
+            // Badan
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.MeshLambertMaterial({ color: color })
+            );
+            body.position.y = 0.5;
+            group.add(body);
+
+            // Label Nama
+            const nameSprite = createNameSprite(name);
+            group.add(nameSprite);
+
+            return group;
+        }
+
+        function startGame() {
+            const input = document.getElementById('player-name-input');
+            myName = input.value.trim() || `Siswa ${Math.floor(Math.random() * 899 + 100)}`;
+            document.getElementById('name-modal').style.display = 'none';
+
+            // Beritahu server bahwa kita bergabung
+            socket.emit('joinGame', myName);
+        }
+
         socket.on('currentPlayers', (players) => {
             Object.keys(players).forEach((id) => {
                 if (id === socket.id) {
-                    // Karakter milik kita sendiri (Hijau)
-                    player = createPlayerMesh(0x4CAF50);
+                    player = createPlayerMesh(0x4CAF50, players[id].name);
                     player.position.set(players[id].x, players[id].y, players[id].z);
                     scene.add(player);
                 } else {
-                    // Karakter siswa lain (Biru)
-                    addOtherPlayer(id, players[id]);
+                    addOtherPlayer(players[id]);
                 }
             });
         });
 
-        // Jika ada siswa baru masuk
         socket.on('newPlayer', (playerInfo) => {
-            addOtherPlayer(playerInfo.id, playerInfo.pos);
+            addOtherPlayer(playerInfo);
         });
 
-        function addOtherPlayer(id, pos) {
-            const other = createPlayerMesh(0x2196F3); // Warna Biru untuk teman
-            other.position.set(pos.x, pos.y, pos.z);
+        function addOtherPlayer(playerInfo) {
+            const other = createPlayerMesh(0x2196F3, playerInfo.name);
+            other.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
             scene.add(other);
-            otherPlayers[id] = other;
+            otherPlayers[playerInfo.id] = other;
         }
 
-        // Jika ada posisi siswa lain yang berubah
-        socket.on('playerMoved', (playerInfo) => {
-            if (otherPlayers[playerInfo.id]) {
-                otherPlayers[playerInfo.id].position.set(playerInfo.pos.x, playerInfo.pos.y, playerInfo.pos.z);
+        socket.on('playerMoved', (data) => {
+            if (otherPlayers[data.id]) {
+                otherPlayers[data.id].position.set(data.pos.x, data.pos.y, data.pos.z);
             }
         });
 
-        // Jika ada siswa yang keluar
         socket.on('playerDisconnected', (id) => {
             if (otherPlayers[id]) {
                 scene.remove(otherPlayers[id]);
@@ -125,32 +395,57 @@
             }
         });
 
-        // 4. KONTROL GERAKAN & LOGIKA GAME
-        const keys = {};
+        // 5. KONTROL GERAKAN (KEYBOARD & TOUCH)
+        const keys = { Up: false, Down: false, Left: false, Right: false };
         let canMove = true;
         let quizActive = false;
         let checkpointPassed = false;
 
-        window.addEventListener('keydown', (e) => { if (canMove) keys[e.key] = true; });
-        window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+        // Listener Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (!canMove) return;
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.Up = true;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.Down = true;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.Left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.Right = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.Up = false;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.Down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.Left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.Right = false;
+        });
+
+        // Listener Touch D-Pad (HP)
+        function bindTouch(elementId, direction) {
+            const btn = document.getElementById(elementId);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (canMove) keys[direction] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[direction] = false; });
+            btn.addEventListener('mousedown', () => { if (canMove) keys[direction] = true; });
+            btn.addEventListener('mouseup', () => { keys[direction] = false; });
+        }
+        bindTouch('btn-up', 'Up');
+        bindTouch('btn-down', 'Down');
+        bindTouch('btn-left', 'Left');
+        bindTouch('btn-right', 'Right');
 
         function resetKeys() {
-            for (let key in keys) keys[key] = false;
+            keys.Up = false; keys.Down = false; keys.Left = false; keys.Right = false;
         }
 
-        const speed = 0.1;
+        const speed = 0.12;
 
+        // 6. MAIN ANIMATION LOOP
         function animate() {
             requestAnimationFrame(animate);
 
             if (canMove && player) {
                 let moved = false;
-                if (keys['ArrowUp']) { player.position.z -= speed; moved = true; }
-                if (keys['ArrowDown']) { player.position.z += speed; moved = true; }
-                if (keys['ArrowLeft']) { player.position.x -= speed; moved = true; }
-                if (keys['ArrowRight']) { player.position.x += speed; moved = true; }
+                if (keys.Up) { player.position.z -= speed; moved = true; }
+                if (keys.Down) { player.position.z += speed; moved = true; }
+                if (keys.Left) { player.position.x -= speed; moved = true; }
+                if (keys.Right) { player.position.x += speed; moved = true; }
 
-                // Jika bergerak, kirim posisi baru ke server
                 if (moved) {
                     socket.emit('playerMovement', {
                         x: player.position.x,
@@ -159,15 +454,17 @@
                     });
                 }
 
+                // Smooth Camera Follow
                 camera.position.x = player.position.x;
-                camera.position.z = player.position.z + 5;
-                camera.lookAt(player.position);
+                camera.position.y = player.position.y + 4;
+                camera.position.z = player.position.z + 7;
+                camera.lookAt(player.position.x, player.position.y + 0.5, player.position.z);
             }
 
-            // Cek Checkpoint Kuis
-            if (player && !quizActive && !checkpointPassed && 
-                Math.abs(player.position.x - checkpoint.position.x) < 1.5 && 
-                Math.abs(player.position.z - checkpoint.position.z) < 1.5) {
+            // Check Collision Checkpoint Kuis
+            if (player && !quizActive && !checkpointPassed &&
+                Math.abs(player.position.x - checkpoint.position.x) < 2 &&
+                Math.abs(player.position.z - checkpoint.position.z) < 2) {
                 triggerQuiz();
             }
 
@@ -175,7 +472,7 @@
         }
         animate();
 
-        // 5. KUIS POP-UP
+        // 7. KUIS MODAL LOGIC
         function triggerQuiz() {
             quizActive = true;
             canMove = false;
@@ -191,8 +488,8 @@
         function checkAnswer(option) {
             const feedback = document.getElementById('quiz-feedback');
             if (option === 'B') {
-                feedback.style.color = "green";
-                feedback.innerText = "Benar! Pintar sekali!";
+                feedback.style.color = "#2ecc71";
+                feedback.innerText = "Benar sekali! Kamu hebat! 🎉";
                 setTimeout(() => {
                     document.getElementById('quiz-modal').style.display = 'none';
                     checkpointPassed = true;
@@ -201,11 +498,10 @@
                     quizActive = false;
                     canMove = true;
                     resetKeys();
-                    window.focus();
-                }, 1000);
+                }, 1200);
             } else {
-                feedback.style.color = "red";
-                feedback.innerText = "Coba lagi ya!";
+                feedback.style.color = "#e74c3c";
+                feedback.innerText = "Coba lagi ya! Perhatikan urutan perkalian.";
             }
         }
 
@@ -215,6 +511,5 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-
 </body>
 </html>
