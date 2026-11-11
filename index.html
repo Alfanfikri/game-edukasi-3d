@@ -534,9 +534,9 @@
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // Touch Rotation
+        // Touch Rotation (Diperbarui agar tidak bentrok dengan D-Pad di HP)
         window.addEventListener('touchstart', (e) => {
-            if (e.target.closest('#touch-controls') || e.target.tagName === 'BUTTON') return;
+            if (e.target.closest('#touch-controls') || e.target.closest('#fullscreen-btn') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
             if (e.touches.length === 1) {
                 isDragging = true;
                 previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
