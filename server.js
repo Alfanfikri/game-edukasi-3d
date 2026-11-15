@@ -8,7 +8,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// Bank Soal Default (Bisa diedit & ditambah mapelnya oleh guru di /teacher)
 let questionBank = {
     "MTK": [
         { q: "Berapakah hasil dari 5 + 5 x 2 ?", options: ["A. 20", "B. 15", "C. 10"], correct: "B", reward: 50 },
@@ -23,17 +22,9 @@ let questionBank = {
     ]
 };
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/teacher', (req, res) => {
-    res.sendFile(path.join(__dirname, 'teacher.html'));
-});
-
-app.get('/api/questions', (req, res) => {
-    res.json(questionBank);
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, 'teacher.html')));
+app.get('/api/questions', (req, res) => res.json(questionBank));
 
 app.post('/api/questions', (req, res) => {
     questionBank = req.body;
@@ -42,6 +33,11 @@ app.post('/api/questions', (req, res) => {
 });
 
 const players = {};
+// Status Pintu Sekolah (false = tertutup, true = terbuka)
+const doorStates = {
+    "door_kelas": false,
+    "door_guru": false
+};
 
 io.on('connection', (socket) => {
     console.log('Siswa terhubung:', socket.id);
@@ -57,7 +53,7 @@ io.on('connection', (socket) => {
             clothesColor: playerData.clothesColor || '#0000ff',
             x: 0,
             y: 0,
-            z: 8, // Spawn tepat di depan Gerbang Pintu Masuk
+            z: 8,
             ry: Math.PI,
             isMoving: false,
             coins: 100,
@@ -67,17 +63,22 @@ io.on('connection', (socket) => {
 
         socket.emit('currentPlayers', players);
         socket.emit('updateQuestions', questionBank);
+        socket.emit('syncDoors', doorStates);
         socket.broadcast.emit('newPlayer', players[socket.id]);
     });
 
     socket.on('playerMovement', (movementData) => {
         if (players[socket.id]) {
-            players[socket.id].x = movementData.x;
-            players[socket.id].y = movementData.y;
-            players[socket.id].z = movementData.z;
-            players[socket.id].ry = movementData.ry;
-            players[socket.id].isMoving = movementData.isMoving;
+            Object.assign(players[socket.id], movementData);
             socket.broadcast.emit('playerMoved', { id: socket.id, pos: movementData });
+        }
+    });
+
+    // Event Buka / Tutup Pintu
+    socket.on('toggleDoor', (doorId) => {
+        if (doorStates[doorId] !== undefined) {
+            doorStates[doorId] = !doorStates[doorId];
+            io.emit('doorToggled', { doorId, isOpen: doorStates[doorId] });
         }
     });
 
@@ -90,9 +91,9 @@ io.on('connection', (socket) => {
 
     socket.on('updateStats', (data) => {
         if (players[socket.id]) {
-            players[socket.id].coins = data.coins !== undefined ? data.coins : players[socket.id].coins;
-            players[socket.id].health = data.health !== undefined ? data.health : players[socket.id].health;
-            players[socket.id].stamina = data.stamina !== undefined ? data.stamina : players[socket.id].stamina;
+            players[socket.id].coins = data.coins ?? players[socket.id].coins;
+            players[socket.id].health = data.health ?? players[socket.id].health;
+            players[socket.id].stamina = data.stamina ?? players[socket.id].stamina;
             io.emit('playerStatsUpdated', {
                 id: socket.id,
                 coins: players[socket.id].coins,
@@ -109,6 +110,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log(`Server berjalan di port ${PORT}`);
-});
+http.listen(PORT, () => console.log(`Server berjalan di port ${PORT}`));

@@ -39,7 +39,7 @@
         #hp-fill { background: #e74c3c; }
         #stamina-fill { background: #f1c40f; }
 
-        /* Tombol Atas Kanan (Peta & Fullscreen) */
+        /* Tombol Atas Kanan */
         #top-right-btns {
             position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 10;
         }
@@ -47,19 +47,31 @@
             background: rgba(0, 0, 0, 0.72); color: white; border: 1px solid rgba(255,255,255,0.25);
             padding: 10px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; backdrop-filter: blur(4px);
         }
-        .hud-btn:active { background: #2ecc71; }
 
-        /* Modal Umum (Sekolah, Restoran, Butik) */
+        /* Tombol Aksi Kontekstual (Buka Pintu / Papan Tulis / Meja Guru) */
+        #action-prompt {
+            display: none; position: absolute; bottom: 135px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border: 2px solid #fff;
+            padding: 12px 22px; border-radius: 30px; font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45); z-index: 15; animation: pulse 1.4s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        /* Modal Umum */
         .game-modal {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #ffffff; color: #333; padding: 22px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            text-align: center; width: 92%; max-width: 420px; z-index: 25; border: 3px solid #f1c40f; max-height: 88vh; overflow-y: auto;
+            text-align: center; width: 92%; max-width: 420px; z-index: 25; border: 3px solid #27ae60; max-height: 88vh; overflow-y: auto;
         }
         .modal-btn { display: block; width: 100%; padding: 11px; margin: 8px 0; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; }
         .modal-btn.green { background: #2ecc71; }
         .modal-btn.close { background: #e74c3c; margin-top: 12px; }
 
-        /* Modal Peta Interaktif Real-Time (Seperti Referensi Gambar) */
+        /* Modal Peta */
         #map-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); z-index: 40; justify-content: center; align-items: center; flex-direction: column;
@@ -93,7 +105,6 @@
             display: flex; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(4px); cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        #jump-btn:active { transform: scale(0.92); }
     </style>
 </head>
 <body>
@@ -156,36 +167,48 @@
         <button class="hud-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
     </div>
 
+    <!-- TOMBOL AKSI DEKAT PINTU / PAPAN TULIS -->
+    <button id="action-prompt" onclick="triggerContextualAction()">🚪 Buka Pintu</button>
+
     <!-- MODAL PETA REAL-TIME -->
     <div id="map-modal">
         <div class="map-container">
             <h3 style="margin:0 0 5px 0; color:#f1c40f;">🗺️ PETA KOTA & LOKASI TERKINI</h3>
             <div id="map-coords" style="font-size:13px; color:#dcdde1;">Koordinat: X: 0, Z: 0</div>
             <canvas id="minimap-canvas" width="440" height="440"></canvas>
-            <div style="font-size:12px; color:#ccc;">🔴 Titik Merah = Lokasi Kamu Sekarang | 🟡 Lingkaran = Gedung Utama</div>
+            <div style="font-size:12px; color:#ccc;">🔴 Titik Merah = Lokasi Kamu | 🟢 Sekolah di Utara (X: 0, Z: -42)</div>
             <button class="modal-btn close" onclick="toggleMapModal()" style="max-width:200px; margin:10px auto 0 auto;">Tutup Peta</button>
         </div>
     </div>
 
-    <!-- MODAL GEDUNG SEKOLAH (PILIH MAPEL & KERJAKAN SOAL) -->
+    <!-- MODAL PAPAN TULIS KELAS (KERJAKAN SOAL) -->
     <div id="quiz-modal" class="game-modal">
-        <h3>🏫 GEDUNG SEKOLAH</h3>
+        <h3>🟩 PAPAN TULIS KELAS</h3>
         <div id="subject-selection">
-            <p>Pilih Mata Pelajaran untuk mendapatkan Koin:</p>
+            <p>Pilih Mata Pelajaran di Papan Tulis:</p>
             <div id="subject-buttons"></div>
         </div>
         <div id="quiz-play-area" style="display:none;">
-            <h4 id="quiz-subject-title" style="color:#2980b9; margin:5px 0;">MAPEL</h4>
+            <h4 id="quiz-subject-title" style="color:#27ae60; margin:5px 0;">MAPEL</h4>
             <p id="quiz-question" style="font-size:17px; font-weight:bold;">Pertanyaan?</p>
             <button class="modal-btn" onclick="checkAnswer(0)" id="opt-0">A</button>
             <button class="modal-btn" onclick="checkAnswer(1)" id="opt-1">B</button>
             <button class="modal-btn" onclick="checkAnswer(2)" id="opt-2">C</button>
             <p id="quiz-feedback" style="font-weight:bold;"></p>
         </div>
-        <button class="modal-btn close" onclick="closeModal('quiz-modal')">Keluar Sekolah</button>
+        <button class="modal-btn close" onclick="closeModal('quiz-modal')">Tutup Papan Tulis</button>
     </div>
 
-    <!-- MODAL WARUNG MAKAN / RESTORAN -->
+    <!-- MODAL RUANG GURU -->
+    <div id="teacher-room-modal" class="game-modal">
+        <h3>👩‍🏫 RUANG GURU</h3>
+        <p>Selamat datang di Ruang Guru! Kamu bisa beristirahat sejenak atau membuka Panel Guru untuk mengelola soal pelajaran.</p>
+        <button class="modal-btn green" onclick="restInTeacherRoom()">☕ Istirahat (+20 Stamina Gratis)</button>
+        <button class="modal-btn" onclick="window.open('/teacher', '_blank')">📋 Buka Panel Soal Guru</button>
+        <button class="modal-btn close" onclick="closeModal('teacher-room-modal')">Tutup</button>
+    </div>
+
+    <!-- MODAL WARUNG MAKAN -->
     <div id="restaurant-modal" class="game-modal">
         <h3>🍔 WARUNG MAKAN & RESTORAN</h3>
         <p>Beli makanan & minuman untuk memulihkan Kesehatan dan Stamina!</p>
@@ -195,10 +218,10 @@
         <button class="modal-btn close" onclick="closeModal('restaurant-modal')">Keluar Restoran</button>
     </div>
 
-    <!-- MODAL GEDUNG PAKAIAN / BUTIK -->
+    <!-- MODAL BUTIK -->
     <div id="wardrobe-modal" class="game-modal">
         <h3>👕 TOKO PAKAIAN & SALON</h3>
-        <p>Ubah gaya pakaian, rambut, dan penampilanmu (Harga: 30 Koin)</p>
+        <p>Ubah gaya pakaian & rambutmu (Harga: 30 Koin)</p>
         <div class="form-group" style="text-align:left;">
             <label>Pilih Warna Pakaian Baru:</label>
             <input type="color" id="edit-clothes" value="#e74c3c" style="width:100%; height:38px;" />
@@ -216,10 +239,10 @@
         <button class="modal-btn close" onclick="closeModal('wardrobe-modal')">Keluar Toko</button>
     </div>
 
-    <!-- MODAL GEDUNG LES TERBANG (KOSONG) -->
+    <!-- MODAL GEDUNG LES TERBANG -->
     <div id="flight-modal" class="game-modal">
         <h3>✈️ GEDUNG LES TERBANG</h3>
-        <p style="color:#7f8c8d; font-size:16px;">Gedung ini masih kosong dan sedang dalam tahap pembangunan. Nantikan pembaruan berikutnya!</p>
+        <p style="color:#7f8c8d; font-size:16px;">Gedung ini masih kosong dan sedang dalam tahap pembangunan.</p>
         <button class="modal-btn close" onclick="closeModal('flight-modal')">Tutup</button>
     </div>
 
@@ -261,7 +284,7 @@
         // -------------------------------------------------------------
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.FogExp2(0x87ceeb, 0.011);
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.009);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -271,35 +294,39 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.72));
         const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
         sunLight.position.set(50, 80, 30);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 2048;
         sunLight.shadow.mapSize.height = 2048;
-        const d = 80;
+        const d = 90;
         sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
         sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
         scene.add(sunLight);
 
         // -------------------------------------------------------------
-        // 2. KOTA LENGKAP + COLLIDER + GEDUNG KHUSUS
+        // 2. KOTA, COLLIDER & GEDUNG SEKOLAH SESUAI GAMBAR REFERENSI
         // -------------------------------------------------------------
         const cityGroup = new THREE.Group();
-        const colliders = []; // Menyimpan kotak tabrakan gedung { minX, maxX, minZ, maxZ }
-        const mapBuildings = []; // Menyimpan data gedung untuk digambar di Peta 2D
+        const colliders = [];
+        const mapBuildings = [];
+        const interactiveDoors = {}; // Menyimpan objek pintu interaktif { id, pivot, isOpen, targetAngle, collider, worldPos, label }
 
         function registerCollider(cx, cz, w, d) {
-            const pad = 0.6; // Radius tubuh karakter agar tidak menempel/tembus dinding
-            colliders.push({
+            const pad = 0.45;
+            const col = {
                 minX: cx - w / 2 - pad,
                 maxX: cx + w / 2 + pad,
                 minZ: cz - d / 2 - pad,
-                maxZ: cz + d / 2 + pad
-            });
+                maxZ: cz + d / 2 + pad,
+                active: true
+            };
+            colliders.push(col);
+            return col;
         }
 
-        function create3DSign(text, bgColor = '#2c3e50') {
+        function create3DSign(text, bgColor = '#2c3e50', w = 10, h = 2.5) {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 128;
             const ctx = canvas.getContext('2d');
@@ -307,12 +334,12 @@
             ctx.roundRect(10, 10, 492, 108, 20);
             ctx.fill();
             ctx.lineWidth = 6; ctx.strokeStyle = '#f1c40f'; ctx.stroke();
-            ctx.font = 'Bold 44px Arial'; ctx.fillStyle = '#ffffff';
+            ctx.font = 'Bold 40px Arial'; ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(text, 256, 64);
 
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-            sprite.scale.set(10, 2.5, 1);
+            sprite.scale.set(w, h, 1);
             return sprite;
         }
 
@@ -322,14 +349,326 @@
         ground.receiveShadow = true;
         cityGroup.add(ground);
 
-        // Membuat Gedung Khusus + Zona Pintu Masuk
+        // FUNGSI MEMBUAT GEDUNG SEKOLAH 2 LANTAI (NUANSA HIJAU-PUTIH-ABU SEPERTI GAMBAR)
+        function buildDetailedSchool(cx, cz) {
+            const schoolGroup = new THREE.Group();
+            schoolGroup.position.set(cx, 0.2, cz);
+
+            // Warna sesuai gambar referensi
+            const greenMat = new THREE.MeshLambertMaterial({ color: 0x117a27 });
+            const creamWallMat = new THREE.MeshLambertMaterial({ color: 0xf4f1ea });
+            const greyMat = new THREE.MeshLambertMaterial({ color: 0x57606f });
+            const whiteTrimMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const woodMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+            const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x5c2e0c });
+
+            const totalW = 28; // Lebar sekolah (X: -14 s/d +14)
+            const totalD = 16; // Kedalaman sekolah (Z: -8 s/d +8)
+            const floorH = 4.6;
+
+            // Lantai Dasar & Lantai 2
+            const floor1 = new THREE.Mesh(new THREE.BoxGeometry(totalW, 0.2, totalD), new THREE.MeshLambertMaterial({ color: 0xdcdde1 }));
+            floor1.position.set(0, 0.1, 0); floor1.receiveShadow = true;
+            schoolGroup.add(floor1);
+
+            const floor2 = new THREE.Mesh(new THREE.BoxGeometry(totalW, 0.35, totalD), whiteTrimMat);
+            floor2.position.set(0, floorH, 0);
+            schoolGroup.add(floor2);
+
+            // Atap Gedung
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(totalW + 0.8, 0.5, totalD + 0.8), greenMat);
+            roof.position.set(0, floorH * 2 + 0.2, 0);
+            schoolGroup.add(roof);
+
+            // Menara Tengah (Fasad Utama bertuliskan ISLAMIC SCHOOL seperti di gambar)
+            const centerTower = new THREE.Mesh(new THREE.BoxGeometry(5.6, floorH * 2 + 1.4, 1.2), greyMat);
+            centerTower.position.set(0, floorH + 0.6, totalD / 2 - 0.4);
+            schoolGroup.add(centerTower);
+
+            // Ornamen Kerawang Putih di Tengah Fasad
+            const latticeCanvas = document.createElement('canvas');
+            latticeCanvas.width = 256; latticeCanvas.height = 256;
+            const lctx = latticeCanvas.getContext('2d');
+            lctx.fillStyle = '#ecf0f1'; lctx.fillRect(0, 0, 256, 256);
+            lctx.strokeStyle = '#7f8c8d'; lctx.lineWidth = 6;
+            for (let i = -256; i < 512; i += 28) {
+                lctx.beginPath(); lctx.moveTo(i, 0); lctx.lineTo(i + 256, 256); lctx.stroke();
+                lctx.beginPath(); lctx.moveTo(i + 256, 0); lctx.lineTo(i, 256); lctx.stroke();
+            }
+            const latticeMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(4.2, 4.4),
+                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(latticeCanvas) })
+            );
+            latticeMesh.position.set(0, floorH + 1.2, totalD / 2 + 0.22);
+            schoolGroup.add(latticeMesh);
+
+            // Papan Nama Fasad Sekolah (Persis posisi tulisan di menara tengah gambar)
+            const facadeSign = create3DSign("ISLAMIC SCHOOL", "#2f3640", 5.2, 1.2);
+            facadeSign.position.set(0, floorH * 2 + 0.4, totalD / 2 + 0.3);
+            schoolGroup.add(facadeSign);
+
+            // Pilar Teras Depan & Lengkungan Runcing (Arch) Lantai 2 seperti gambar
+            const pillarPositions = [-13.5, -9, -4.5, -2.5, 2.5, 4.5, 9, 13.5];
+            pillarPositions.forEach((px) => {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.65, floorH * 2, 0.65), whiteTrimMat);
+                pillar.position.set(px, floorH, totalD / 2 - 0.3);
+                pillar.castShadow = true;
+                schoolGroup.add(pillar);
+            });
+
+            // Balkon Hijau Lantai 2 & Lengkungan Kubah Runcing
+            const balconyBand = new THREE.Mesh(new THREE.BoxGeometry(totalW, 1.1, 0.4), greenMat);
+            balconyBand.position.set(0, floorH + 0.6, totalD / 2 - 0.25);
+            schoolGroup.add(balconyBand);
+
+            const topGreenBand = new THREE.Mesh(new THREE.BoxGeometry(totalW, 1.2, 0.4), greenMat);
+            topGreenBand.position.set(0, floorH * 2 - 0.6, totalD / 2 - 0.25);
+            schoolGroup.add(topGreenBand);
+
+            // Lengkungan runcing di sepanjang koridor lantai 2
+            const archCenters = [-11.25, -6.75, -3.5, 3.5, 6.75, 11.25];
+            archCenters.forEach(ax => {
+                const archL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.3, 0.35), whiteTrimMat);
+                archL.position.set(ax - 0.9, floorH + 2.3, totalD / 2 - 0.25);
+                archL.rotation.z = -0.45;
+                const archR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.3, 0.35), whiteTrimMat);
+                archR.position.set(ax + 0.9, floorH + 2.3, totalD / 2 - 0.25);
+                archR.rotation.z = 0.45;
+                schoolGroup.add(archL, archR);
+            });
+
+            // Taman Bunga di Teras Depan (Persis seperti di gambar)
+            [-8.5, 8.5].forEach(gx => {
+                const planter = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.45, 1.3), greyMat);
+                planter.position.set(gx, 0.22, totalD / 2 + 1.1);
+                const flowers = new THREE.Mesh(new THREE.BoxGeometry(7.1, 0.3, 0.9), new THREE.MeshLambertMaterial({ color: 0x2ecc71 }));
+                flowers.position.set(gx, 0.5, totalD / 2 + 1.1);
+                schoolGroup.add(planter, flowers);
+            });
+
+            // ---------------------------------------------------------
+            // DINDING RUANGAN & COLLIDER (LANTAI 1 BISA DIMASUKI)
+            // Bagian Kiri (X: -14 s/d -2) = RUANG KELAS
+            // Bagian Tengah (X: -2 s/d +2) = LORONG MASUK
+            // Bagian Kanan (X: +2 s/d +14) = RUANG GURU
+            // ---------------------------------------------------------
+            const wallZFront = 4.5; // Dinding depan kelas & ruang guru (ada koridor teras di Z: 4.5 s/d 8)
+            const wallZBack = -7.6; // Dinding belakang sekolah
+
+            // 1. Dinding Belakang & Samping Luar
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(totalW, floorH * 2, 0.5), creamWallMat);
+            backWall.position.set(0, floorH, wallZBack);
+            schoolGroup.add(backWall);
+            registerCollider(cx, cz + wallZBack, totalW, 0.6);
+
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, floorH * 2, totalD), creamWallMat);
+            leftWall.position.set(-totalW / 2, floorH, 0);
+            schoolGroup.add(leftWall);
+            registerCollider(cx - totalW / 2, cz, 0.6, totalD);
+
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, floorH * 2, totalD), creamWallMat);
+            rightWall.position.set(totalW / 2, floorH, 0);
+            schoolGroup.add(rightWall);
+            registerCollider(cx + totalW / 2, cz, 0.6, totalD);
+
+            // 2. Dinding Pembatas Tengah (Memisahkan Ruang Kelas & Ruang Guru dengan Lorong)
+            const midWallL = new THREE.Mesh(new THREE.BoxGeometry(0.4, floorH, 12.1), creamWallMat);
+            midWallL.position.set(-2.2, floorH / 2, -1.55);
+            schoolGroup.add(midWallL);
+            registerCollider(cx - 2.2, cz - 1.55, 0.5, 12.1);
+
+            const midWallR = new THREE.Mesh(new THREE.BoxGeometry(0.4, floorH, 12.1), creamWallMat);
+            midWallR.position.set(2.2, floorH / 2, -1.55);
+            schoolGroup.add(midWallR);
+            registerCollider(cx + 2.2, cz - 1.55, 0.5, 12.1);
+
+            // 3. Dinding Depan Ruang Kelas (X: -14 s/d -2.2) dengan Lubang Pintu di X: -5.5
+            // Segmen kiri pintu kelas (X: -14 s/d -6.5)
+            const classWallL = new THREE.Mesh(new THREE.BoxGeometry(7.5, floorH, 0.4), creamWallMat);
+            classWallL.position.set(-10.25, floorH / 2, wallZFront);
+            schoolGroup.add(classWallL);
+            registerCollider(cx - 10.25, cz + wallZFront, 7.5, 0.5);
+
+            // Segmen kanan pintu kelas (X: -4.5 s/d -2.2)
+            const classWallR = new THREE.Mesh(new THREE.BoxGeometry(2.3, floorH, 0.4), creamWallMat);
+            classWallR.position.set(-3.35, floorH / 2, wallZFront);
+            schoolGroup.add(classWallR);
+            registerCollider(cx - 3.35, cz + wallZFront, 2.3, 0.5);
+
+            // Kusen atas pintu kelas
+            const classHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.1, 0.4), creamWallMat);
+            classHeader.position.set(-5.5, floorH - 0.55, wallZFront);
+            schoolGroup.add(classHeader);
+
+            // Jendela Coklat Ruang Kelas (Seperti di gambar)
+            const winFrame1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.8, 0.5), woodMat);
+            winFrame1.position.set(-10.2, 2.3, wallZFront);
+            schoolGroup.add(winFrame1);
+
+            // 4. Dinding Depan Ruang Guru (X: +2.2 s/d +14) dengan Lubang Pintu di X: +5.5
+            // Segmen kiri pintu ruang guru (X: +2.2 s/d +4.5)
+            const guruWallL = new THREE.Mesh(new THREE.BoxGeometry(2.3, floorH, 0.4), creamWallMat);
+            guruWallL.position.set(3.35, floorH / 2, wallZFront);
+            schoolGroup.add(guruWallL);
+            registerCollider(cx + 3.35, cz + wallZFront, 2.3, 0.5);
+
+            // Segmen kanan pintu ruang guru (X: +6.5 s/d +14)
+            const guruWallR = new THREE.Mesh(new THREE.BoxGeometry(7.5, floorH, 0.4), creamWallMat);
+            guruWallR.position.set(10.25, floorH / 2, wallZFront);
+            schoolGroup.add(guruWallR);
+            registerCollider(cx + 10.25, cz + wallZFront, 7.5, 0.5);
+
+            const guruHeader = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.1, 0.4), creamWallMat);
+            guruHeader.position.set(5.5, floorH - 0.55, wallZFront);
+            schoolGroup.add(guruHeader);
+
+            const winFrame2 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.8, 0.5), woodMat);
+            winFrame2.position.set(10.2, 2.3, wallZFront);
+            schoolGroup.add(winFrame2);
+
+            // Dinding Lantai 2 Penuh (Fasad Atas)
+            const upperFrontWall = new THREE.Mesh(new THREE.BoxGeometry(totalW, floorH, 0.4), creamWallMat);
+            upperFrontWall.position.set(0, floorH * 1.5, wallZFront);
+            schoolGroup.add(upperFrontWall);
+
+            // ---------------------------------------------------------
+            // PINTU INTERAKTIF (BISA DIBUKA & DITUTUP SISWA)
+            // ---------------------------------------------------------
+            function createInteractiveDoor(id, doorX, doorZ, label) {
+                const doorPivot = new THREE.Group();
+                doorPivot.position.set(doorX - 0.95, 0, doorZ); // Engsel di sisi kiri kusen
+
+                const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.9, 3.4, 0.18), woodMat);
+                doorLeaf.position.set(0.95, 1.7, 0);
+                doorLeaf.castShadow = true;
+
+                // Gagang pintu kuning emas
+                const handle = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xf1c40f }));
+                handle.position.set(1.65, 1.6, 0.14);
+                const handleBack = handle.clone();
+                handleBack.position.set(1.65, 1.6, -0.14);
+
+                doorPivot.add(doorLeaf, handle, handleBack);
+                schoolGroup.add(doorPivot);
+
+                // Collider Pintu (aktif saat tertutup, nonaktif saat terbuka)
+                const doorCol = registerCollider(cx + doorX, cz + doorZ, 1.9, 0.4);
+
+                interactiveDoors[id] = {
+                    id,
+                    pivot: doorPivot,
+                    isOpen: false,
+                    targetAngle: 0,
+                    collider: doorCol,
+                    worldX: cx + doorX,
+                    worldZ: cz + doorZ,
+                    label
+                };
+            }
+
+            createInteractiveDoor("door_kelas", -5.5, wallZFront, "Pintu Ruang Kelas");
+            createInteractiveDoor("door_guru", 5.5, wallZFront, "Pintu Ruang Guru");
+
+            // Label Ruangan di Atas Pintu
+            const signKelas = create3DSign("RUANG KELAS", "#117a27", 3.6, 0.9);
+            signKelas.position.set(-5.5, 3.9, wallZFront + 0.3);
+            schoolGroup.add(signKelas);
+
+            const signGuru = create3DSign("RUANG GURU", "#2980b9", 3.6, 0.9);
+            signGuru.position.set(5.5, 3.9, wallZFront + 0.3);
+            schoolGroup.add(signGuru);
+
+            // ---------------------------------------------------------
+            // INTERIOR RUANG KELAS (PAPAN TULIS, MEJA GURU, KURSI SISWA)
+            // ---------------------------------------------------------
+            // Papan Tulis Hijau di Dinding Belakang Kelas (X: -8.2, Z: -7.2)
+            const boardFrame = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.2, 0.15), darkWoodMat);
+            boardFrame.position.set(-8.2, 2.3, wallZBack + 0.3);
+            schoolGroup.add(boardFrame);
+
+            const boardCanvas = document.createElement('canvas');
+            boardCanvas.width = 512; boardCanvas.height = 256;
+            const bctx = boardCanvas.getContext('2d');
+            bctx.fillStyle = '#145a32'; bctx.fillRect(0, 0, 512, 256);
+            bctx.fillStyle = '#ffffff'; bctx.font = 'Bold 28px Comic Sans MS, Arial';
+            bctx.textAlign = 'center';
+            bctx.fillText("PAPAN TULIS KELAS", 256, 70);
+            bctx.font = '22px Arial';
+            bctx.fillText("Dekati papan tulis untuk", 256, 130);
+            bctx.fillText("mengerjakan soal & dapat Koin!", 256, 168);
+
+            const blackboard = new THREE.Mesh(
+                new THREE.PlaneGeometry(5.2, 1.9),
+                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(boardCanvas) })
+            );
+            blackboard.position.set(-8.2, 2.3, wallZBack + 0.39);
+            schoolGroup.add(blackboard);
+
+            // Zona interaktif di depan papan tulis (Karpet kuning)
+            const boardPad = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.5, 2.0),
+                new THREE.MeshBasicMaterial({ color: 0xf1c40f, transparent: true, opacity: 0.45 })
+            );
+            boardPad.rotation.x = -Math.PI / 2;
+            boardPad.position.set(-8.2, 0.22, wallZBack + 2.0);
+            schoolGroup.add(boardPad);
+
+            // Meja & Kursi Siswa (2 kolom x 3 baris)
+            const deskPositions = [
+                { x: -10.5, z: -2.2 }, { x: -6.2, z: -2.2 },
+                { x: -10.5, z: 0.5 },  { x: -6.2, z: 0.5 }
+            ];
+            deskPositions.forEach(dp => {
+                const desk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 1.1), woodMat);
+                desk.position.set(dp.x, 0.45, dp.z);
+                desk.castShadow = true;
+                const chair = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.6), darkWoodMat);
+                chair.position.set(dp.x, 0.28, dp.z + 0.9);
+                schoolGroup.add(desk, chair);
+                registerCollider(cx + dp.x, cz + dp.z + 0.2, 2.1, 1.5);
+            });
+
+            // ---------------------------------------------------------
+            // INTERIOR RUANG GURU (MEJA KERJA GURU & LEMARI BUKU)
+            // ---------------------------------------------------------
+            const guruDesk1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.0, 1.4), darkWoodMat);
+            guruDesk1.position.set(8.2, 0.5, -2.5);
+            guruDesk1.castShadow = true;
+            schoolGroup.add(guruDesk1);
+            registerCollider(cx + 8.2, cz - 2.5, 3.2, 1.4);
+
+            const guruDesk2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.0, 1.4), darkWoodMat);
+            guruDesk2.position.set(8.2, 0.5, 0.8);
+            guruDesk2.castShadow = true;
+            schoolGroup.add(guruDesk2);
+            registerCollider(cx + 8.2, cz + 0.8, 3.2, 1.4);
+
+            // Lemari Arsip / Buku di Ruang Guru
+            const bookshelf = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.2, 0.8), woodMat);
+            bookshelf.position.set(8.2, 1.6, wallZBack + 0.6);
+            schoolGroup.add(bookshelf);
+            registerCollider(cx + 8.2, cz + wallZBack + 0.6, 4.5, 0.8);
+
+            // Zona Interaksi Meja Ruang Guru
+            const guruPad = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.0, 1.8),
+                new THREE.MeshBasicMaterial({ color: 0x3498db, transparent: true, opacity: 0.45 })
+            );
+            guruPad.rotation.x = -Math.PI / 2;
+            guruPad.position.set(8.2, 0.22, -1.0);
+            schoolGroup.add(guruPad);
+
+            cityGroup.add(schoolGroup);
+            mapBuildings.push({ x: cx, z: cz, w: totalW, d: totalD, title: "Sekolah", isLandmark: true, color: "#117a27" });
+        }
+
+        // Membuat Gedung Kota Lainnya
         function createSpecialBuilding(x, z, w, h, d, color, title, triggerZoneOffset, isMainLandmark = true) {
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
             mesh.position.set(x, h / 2 + 0.2, z);
             mesh.castShadow = true; mesh.receiveShadow = true;
             cityGroup.add(mesh);
 
-            // Jendela dekorasi
             const winMesh = new THREE.Mesh(
                 new THREE.BoxGeometry(w + 0.15, h * 0.75, d + 0.15),
                 new THREE.MeshBasicMaterial({ color: 0xfff3a1 })
@@ -338,16 +677,13 @@
             winMesh.scale.set(0.96, 0.85, 0.96);
             cityGroup.add(winMesh);
 
-            // Papan Nama Gedung
             const sign = create3DSign(title);
             sign.position.set(x, h + 2.5, z);
             cityGroup.add(sign);
 
-            // Daftarkan tabrakan fisik gedung
             registerCollider(x, z, w, d);
             mapBuildings.push({ x, z, w, d, title, isLandmark: isMainLandmark, color: '#' + color.toString(16).padStart(6, '0') });
 
-            // Karpet / Zona Masuk Interaksi di depan pintu
             if (triggerZoneOffset) {
                 const pad = new THREE.Mesh(
                     new THREE.CylinderGeometry(2.5, 2.5, 0.25, 20),
@@ -369,15 +705,13 @@
                     const bx = gx * (blockSize + roadWidth);
                     const bz = gz * (blockSize + roadWidth);
 
-                    // Trotoar setiap blok
                     const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(blockSize, 0.2, blockSize), sidewalkMat);
                     sidewalk.position.set(bx, 0.1, bz);
                     sidewalk.receiveShadow = true;
                     cityGroup.add(sidewalk);
 
-                    // Blok Pusat (0, 0) -> Pintu Masuk Kota & Alun-alun
+                    // Blok Pusat (0, 0) -> Pintu Masuk Kota
                     if (gx === 0 && gz === 0) {
-                        // Gapura Pintu Masuk Kota
                         const pillarL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 6, 1.5), new THREE.MeshLambertMaterial({ color: 0xf1c40f }));
                         pillarL.position.set(-5, 3, 2); cityGroup.add(pillarL); registerCollider(-5, 2, 1.5, 1.5);
 
@@ -393,31 +727,31 @@
                         continue;
                     }
 
-                    // Blok Utara (0, -1) -> GEDUNG SEKOLAH
+                    // Blok Utara (0, -1) -> GEDUNG SEKOLAH LENGKAP DENGAN INTERIOR & PINTU
                     if (gx === 0 && gz === -1) {
-                        createSpecialBuilding(bx, bz, 22, 14, 18, 0x2980b9, "🏫 SEKOLAH", { x: 0, z: 11.5 });
+                        buildDetailedSchool(bx, bz); // Pusat di (0, -42)
                         continue;
                     }
 
-                    // Blok Timur (1, 0) -> WARUNG MAKAN / RESTORAN
+                    // Blok Timur (1, 0) -> WARUNG MAKAN
                     if (gx === 1 && gz === 0) {
                         createSpecialBuilding(bx, bz, 20, 10, 18, 0xe74c3c, "🍔 WARUNG MAKAN", { x: -12.5, z: 0 });
                         continue;
                     }
 
-                    // Blok Barat (-1, 0) -> GEDUNG PAKAIAN / BUTIK
+                    // Blok Barat (-1, 0) -> TOKO PAKAIAN
                     if (gx === -1 && gz === 0) {
                         createSpecialBuilding(bx, bz, 20, 10, 18, 0x9b59b6, "👕 TOKO PAKAIAN", { x: 12.5, z: 0 });
                         continue;
                     }
 
-                    // Blok Selatan (0, 1) -> GEDUNG LES TERBANG (KOSONG)
+                    // Blok Selatan (0, 1) -> GEDUNG LES TERBANG
                     if (gx === 0 && gz === 1) {
                         createSpecialBuilding(bx, bz, 22, 12, 18, 0x7f8c8d, "✈️ LES TERBANG (KOSONG)", { x: 0, z: -11.5 });
                         continue;
                     }
 
-                    // Blok Kota Lainnya -> Gedung-gedung Kota Dekorasi + Collider
+                    // Blok Dekorasi Lainnya
                     const offsets = [
                         { x: -blockSize / 4, z: -blockSize / 4 },
                         { x: blockSize / 4, z: -blockSize / 4 },
@@ -452,34 +786,29 @@
         scene.add(cityGroup);
 
         // -------------------------------------------------------------
-        // 3. KARAKTER KUSTOM (RAMBUT, MATA, HIDUNG, PAKAIAN, GENDER)
+        // 3. KARAKTER KUSTOM
         // -------------------------------------------------------------
         function drawCustomFace(data) {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
 
-            // Warna kulit
             ctx.fillStyle = data.gender === 'female' ? '#ffe0bd' : '#f5cd2f';
             ctx.fillRect(0, 0, 128, 128);
 
-            // Mata Kustom
             ctx.fillStyle = data.eyeColor || '#000000';
             ctx.fillRect(28, 36, 16, 22);
             ctx.fillRect(84, 36, 16, 22);
-            // Kilau mata putih
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(31, 39, 5, 5);
             ctx.fillRect(87, 39, 5, 5);
 
-            // Bulu mata jika perempuan
             if (data.gender === 'female') {
                 ctx.fillStyle = '#000000';
                 ctx.fillRect(24, 34, 22, 4);
                 ctx.fillRect(82, 34, 22, 4);
             }
 
-            // Hidung Kustom
             ctx.fillStyle = '#d39e6a';
             if (data.noseStyle === 'pointed') {
                 ctx.beginPath(); ctx.moveTo(64, 54); ctx.lineTo(57, 72); ctx.lineTo(71, 72); ctx.fill();
@@ -489,7 +818,6 @@
                 ctx.fillRect(60, 58, 8, 10);
             }
 
-            // Senyum
             ctx.beginPath();
             ctx.arc(64, 78, 22, 0.1 * Math.PI, 0.9 * Math.PI, false);
             ctx.lineWidth = 6; ctx.strokeStyle = '#333'; ctx.stroke();
@@ -504,13 +832,11 @@
             const torsoMat = new THREE.MeshLambertMaterial({ color: data.clothesColor || '#3498db' });
             const legMat = new THREE.MeshLambertMaterial({ color: data.gender === 'female' ? 0x2c3e50 : 0x1e3799 });
 
-            // Torso (Pakaian)
             const torsoW = data.gender === 'female' ? 1.05 : 1.2;
             const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoW, 1.2, 0.6), torsoMat);
             torso.position.y = 1.4; torso.castShadow = true;
             characterGroup.add(torso);
 
-            // Kepala & Wajah Kustom
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), skinMat);
             head.position.y = 2.4; head.castShadow = true;
             characterGroup.add(head);
@@ -522,7 +848,6 @@
             facePlane.position.set(0, 2.4, 0.41);
             characterGroup.add(facePlane);
 
-            // Gaya Rambut Kustom
             const hairGroup = new THREE.Group();
             const hairMat = new THREE.MeshLambertMaterial({ color: 0x2c1e16 });
 
@@ -552,7 +877,6 @@
             }
             characterGroup.add(hairGroup);
 
-            // Lengan Kiri & Kanan
             const armGeo = new THREE.BoxGeometry(0.48, 1.2, 0.48);
             const leftArmPivot = new THREE.Group();
             leftArmPivot.position.set(-(torsoW / 2 + 0.26), 1.9, 0);
@@ -568,7 +892,6 @@
             rightArmPivot.add(rightArm);
             characterGroup.add(rightArmPivot);
 
-            // Kaki Kiri & Kanan
             const legGeo = new THREE.BoxGeometry(0.52, 1.2, 0.52);
             const leftLegPivot = new THREE.Group();
             leftLegPivot.position.set(-0.3, 0.8, 0);
@@ -585,12 +908,8 @@
             characterGroup.add(rightLegPivot);
 
             return {
-                mesh: characterGroup,
-                torso,
-                hairGroup,
-                leftArmPivot, rightArmPivot,
-                leftLegPivot, rightLegPivot,
-                walkTime: 0
+                mesh: characterGroup, torso, hairGroup,
+                leftArmPivot, rightArmPivot, leftLegPivot, rightLegPivot, walkTime: 0
             };
         }
 
@@ -611,7 +930,7 @@
         }
 
         // -------------------------------------------------------------
-        // 4. MULTIPLAYER & STATUS KESEHATAN/STAMINA
+        // 4. MULTIPLAYER & SINKRONISASI PINTU
         // -------------------------------------------------------------
         const otherPlayers = {};
         let localPlayerObj = null;
@@ -638,16 +957,30 @@
             document.getElementById('stamina-fill').style.width = myData.stamina + '%';
         }
 
-        // Stamina & Kesehatan berkurang otomatis seiring waktu
         setInterval(() => {
             if (!localPlayerObj) return;
             myData.stamina = Math.max(0, myData.stamina - 1.5);
-            if (myData.stamina <= 0) {
-                myData.health = Math.max(10, myData.health - 1);
-            }
+            if (myData.stamina <= 0) myData.health = Math.max(10, myData.health - 1);
             updateHud();
             socket.emit('updateStats', { coins: myData.coins, health: myData.health, stamina: myData.stamina });
         }, 4000);
+
+        // Sinkronisasi Status Pintu dari Server
+        function applyDoorState(doorId, isOpen) {
+            const door = interactiveDoors[doorId];
+            if (!door) return;
+            door.isOpen = isOpen;
+            door.targetAngle = isOpen ? Math.PI / 2 : 0; // Pintu berputar 90 derajat ke dalam saat terbuka
+            door.collider.active = !isOpen; // Jika terbuka, collider nonaktif sehingga siswa bisa masuk!
+        }
+
+        socket.on('syncDoors', (states) => {
+            Object.keys(states).forEach(id => applyDoorState(id, states[id]));
+        });
+
+        socket.on('doorToggled', ({ doorId, isOpen }) => {
+            applyDoorState(doorId, isOpen);
+        });
 
         socket.on('currentPlayers', (players) => {
             Object.keys(players).forEach((id) => {
@@ -677,7 +1010,7 @@
                 const p = otherPlayers[data.id];
                 p.mesh.position.set(data.pos.x, data.pos.y, data.pos.z);
                 p.mesh.rotation.y = data.pos.ry;
-                animateWalk(p, data.pos.isMoving); // Animasi kaki & tangan pemain lain berjalan
+                animateWalk(p, data.pos.isMoving);
             }
         });
 
@@ -697,7 +1030,7 @@
         });
 
         // -------------------------------------------------------------
-        // 5. KONTROL GERAK, LOMPAT, KAMERA & COLLISION DETECTOR
+        // 5. KONTROL GERAK, KAMERA & INTERAKSI KONTEKSTUAL
         // -------------------------------------------------------------
         let cameraYaw = 0, cameraPitch = 0.35;
         const cameraDistance = 8.5;
@@ -716,7 +1049,6 @@
         });
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // Multi-touch HP
         let cameraTouchId = null;
         window.addEventListener('touchstart', (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
@@ -746,6 +1078,7 @@
 
         const keys = { Up: false, Down: false, Left: false, Right: false };
         let canMove = true, isJumping = false, jumpVelocity = 0;
+        let currentContextAction = null; // Menyimpan aksi saat ini (pintu / papan tulis / meja guru)
 
         window.addEventListener('keydown', (e) => {
             if (!canMove) return;
@@ -754,6 +1087,7 @@
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.Left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.Right = true;
             if (e.key === ' ') triggerJump();
+            if (e.key === 'e' || e.key === 'E') triggerContextualAction();
         });
         window.addEventListener('keyup', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.Up = false;
@@ -777,7 +1111,6 @@
         document.getElementById('jump-btn').addEventListener('click', triggerJump);
         document.getElementById('jump-btn').addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
 
-        // Fungsi Animasi Mengayun Kaki dan Tangan
         function animateWalk(playerObj, isMoving) {
             if (isMoving) {
                 playerObj.walkTime += 0.16;
@@ -795,22 +1128,19 @@
             }
         }
 
-        // Fungsi Cek Apakah Koordinat (nx, nz) Menabrak Gedung / Batas Kota
         function checkCollision(nx, nz) {
-            // Batas luar kota
             if (nx < -112 || nx > 112 || nz < -112 || nz > 112) return true;
-
             for (let i = 0; i < colliders.length; i++) {
                 const c = colliders[i];
-                if (nx > c.minX && nx < c.maxX && nz > c.minZ && nz < c.maxZ) {
-                    return true; // Terjadi tabrakan dinding
+                if (c.active && nx > c.minX && nx < c.maxX && nz > c.minZ && nz < c.maxZ) {
+                    return true;
                 }
             }
             return false;
         }
 
         // -------------------------------------------------------------
-        // 6. MAIN LOOP
+        // 6. MAIN LOOP & ANIMASI PINTU HALUS
         // -------------------------------------------------------------
         const baseSpeed = 0.15;
         let activeModalId = null;
@@ -818,6 +1148,11 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
+            // Animasi rotasi engsel pintu agar membuka & menutup dengan mulus
+            Object.values(interactiveDoors).forEach(door => {
+                door.pivot.rotation.y += (door.targetAngle - door.pivot.rotation.y) * 0.15;
+            });
 
             if (canMove && localPlayerObj) {
                 let inputX = 0, inputZ = 0;
@@ -827,7 +1162,6 @@
                 if (keys.Right) inputX += 1;
 
                 const isMoving = (inputX !== 0 || inputZ !== 0);
-                // Kecepatan sedikit melambat jika stamina habis
                 const currentSpeed = myData.stamina > 10 ? baseSpeed : baseSpeed * 0.55;
 
                 if (isMoving) {
@@ -842,7 +1176,6 @@
                     const moveDir = new THREE.Vector3();
                     moveDir.addScaledVector(forward, -inputZ).addScaledVector(right, inputX).normalize();
 
-                    // Sliding Collision (Cek sumbu X dan Z terpisah agar mulus menyusuri dinding)
                     const nextX = localPlayerObj.mesh.position.x + moveDir.x * currentSpeed;
                     const nextZ = localPlayerObj.mesh.position.z + moveDir.z * currentSpeed;
 
@@ -856,7 +1189,6 @@
                     localPlayerObj.mesh.rotation.y = Math.atan2(moveDir.x, moveDir.z);
                 }
 
-                // Fisika Melompat
                 if (isJumping) {
                     localPlayerObj.mesh.position.y += jumpVelocity;
                     jumpVelocity -= 0.013;
@@ -866,7 +1198,6 @@
                     }
                 }
 
-                // Jalankan animasi kaki & tangan
                 animateWalk(localPlayerObj, isMoving);
 
                 socket.emit('playerMovement', {
@@ -877,18 +1208,15 @@
                     isMoving
                 });
 
-                // Update Kamera
                 const pos = localPlayerObj.mesh.position;
                 camera.position.x = pos.x + cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
                 camera.position.y = pos.y + cameraDistance * Math.sin(cameraPitch) + 1.5;
                 camera.position.z = pos.z + cameraDistance * Math.cos(cameraYaw) * Math.cos(cameraPitch);
                 camera.lookAt(pos.x, pos.y + 1.5, pos.z);
 
-                // Cek Zona Pintu Gedung Utama
                 checkBuildingZones(pos);
             }
 
-            // Jika Peta Terbuka, Render Posisi Real-Time Player di Canvas Peta
             if (document.getElementById('map-modal').style.display === 'flex') {
                 renderRealtimeMinimap();
             }
@@ -898,26 +1226,62 @@
         animate();
 
         // -------------------------------------------------------------
-        // 7. LOGIKA ZONA GEDUNG, KUIS MAPEL, RESTORAN, BUTIK & PETA
+        // 7. DETEKSI ZONA SEKOLAH (PINTU, PAPAN TULIS, RUANG GURU) & GEDUNG LAIN
         // -------------------------------------------------------------
         function checkBuildingZones(pos) {
-            if (activeModalId || zoneCooldown) return;
+            if (activeModalId) return;
 
-            // 1. Pintu Sekolah (0, -30.5)
-            if (Math.hypot(pos.x - 0, pos.z - (-30.5)) < 2.6) {
-                openSchoolModal();
+            const promptBtn = document.getElementById('action-prompt');
+            currentContextAction = null;
+
+            // 1. Cek Jarak ke Pintu Ruang Kelas & Pintu Ruang Guru
+            for (const door of Object.values(interactiveDoors)) {
+                if (Math.hypot(pos.x - door.worldX, pos.z - door.worldZ) < 2.6) {
+                    currentContextAction = { type: 'door', doorId: door.id };
+                    promptBtn.innerText = door.isOpen ? `🚪 Tutup ${door.label}` : `🚪 Buka ${door.label}`;
+                    promptBtn.style.display = 'block';
+                    return;
+                }
             }
-            // 2. Pintu Warung Makan / Restoran (29.5, 0)
-            else if (Math.hypot(pos.x - 29.5, pos.z - 0) < 2.6) {
+
+            // 2. Cek Jarak ke Papan Tulis di dalam Ruang Kelas (X: -8.2, Z: -47.6)
+            if (Math.hypot(pos.x - (-8.2), pos.z - (-47.6)) < 2.4) {
+                currentContextAction = { type: 'blackboard' };
+                promptBtn.innerText = `🟩 Kerjakan Soal di Papan Tulis`;
+                promptBtn.style.display = 'block';
+                return;
+            }
+
+            // 3. Cek Jarak ke Meja Ruang Guru (X: 8.2, Z: -43.0)
+            if (Math.hypot(pos.x - 8.2, pos.z - (-43.0)) < 2.4) {
+                currentContextAction = { type: 'teacher_room' };
+                promptBtn.innerText = `👩‍🏫 Interaksi Ruang Guru`;
+                promptBtn.style.display = 'block';
+                return;
+            }
+
+            promptBtn.style.display = 'none';
+
+            if (zoneCooldown) return;
+
+            // Zona Gedung Lain (Restoran, Butik, Les Terbang)
+            if (Math.hypot(pos.x - 29.5, pos.z - 0) < 2.6) {
                 openGameModal('restaurant-modal');
-            }
-            // 3. Pintu Toko Pakaian / Butik (-29.5, 0)
-            else if (Math.hypot(pos.x - (-29.5), pos.z - 0) < 2.6) {
+            } else if (Math.hypot(pos.x - (-29.5), pos.z - 0) < 2.6) {
                 openGameModal('wardrobe-modal');
-            }
-            // 4. Pintu Gedung Les Terbang (0, 30.5)
-            else if (Math.hypot(pos.x - 0, pos.z - 30.5) < 2.6) {
+            } else if (Math.hypot(pos.x - 0, pos.z - 30.5) < 2.6) {
                 openGameModal('flight-modal');
+            }
+        }
+
+        function triggerContextualAction() {
+            if (!currentContextAction) return;
+            if (currentContextAction.type === 'door') {
+                socket.emit('toggleDoor', currentContextAction.doorId);
+            } else if (currentContextAction.type === 'blackboard') {
+                openSchoolModal();
+            } else if (currentContextAction.type === 'teacher_room') {
+                openGameModal('teacher-room-modal');
             }
         }
 
@@ -925,6 +1289,7 @@
             activeModalId = id;
             canMove = false;
             keys.Up = keys.Down = keys.Left = keys.Right = false;
+            document.getElementById('action-prompt').style.display = 'none';
             document.getElementById(id).style.display = 'block';
         }
 
@@ -933,10 +1298,10 @@
             activeModalId = null;
             canMove = true;
             zoneCooldown = true;
-            setTimeout(() => { zoneCooldown = false; }, 2000); // Jeda 2 detik agar tidak langsung masuk lagi saat keluar pintu
+            setTimeout(() => { zoneCooldown = false; }, 1500);
         }
 
-        // Sekolah: Pilih Mata Pelajaran
+        // Kuis Papan Tulis Kelas
         let currentQuizItem = null;
         function openSchoolModal() {
             openGameModal('quiz-modal');
@@ -989,9 +1354,16 @@
             }
         }
 
-        // Restoran: Beli Makanan
+        function restInTeacherRoom() {
+            myData.stamina = Math.min(100, myData.stamina + 20);
+            updateHud();
+            socket.emit('updateStats', { coins: myData.coins, health: myData.health, stamina: myData.stamina });
+            alert("☕ Stamina bertambah +20!");
+            closeModal('teacher-room-modal');
+        }
+
         function buyFood(cost, hpGain, stamGain) {
-            if (myData.coins < cost) return alert("Koin tidak cukup! Kerjakan soal di Sekolah terlebih dahulu.");
+            if (myData.coins < cost) return alert("Koin tidak cukup! Kerjakan soal di Papan Tulis Kelas.");
             myData.coins -= cost;
             myData.health = Math.min(100, myData.health + hpGain);
             myData.stamina = Math.min(100, myData.stamina + stamGain);
@@ -1001,7 +1373,6 @@
             closeModal('restaurant-modal');
         }
 
-        // Butik: Ganti Pakaian & Rambut
         function buyOutfit() {
             const cost = 30;
             if (myData.coins < cost) return alert("Koin tidak cukup (butuh 30 Koin)!");
@@ -1009,7 +1380,6 @@
             myData.clothesColor = document.getElementById('edit-clothes').value;
             myData.hairStyle = document.getElementById('edit-hair').value;
 
-            // Terapkan langsung pada karakter 3D lokal tanpa refresh
             localPlayerObj.torso.material.color.set(myData.clothesColor);
             updateHud();
             socket.emit('updateStats', { coins: myData.coins, health: myData.health, stamina: myData.stamina });
@@ -1019,7 +1389,7 @@
         }
 
         // -------------------------------------------------------------
-        // 8. RENDER PETA VISUAL 2D REAL-TIME (SEPERTI REFERENSI GAMBAR)
+        // 8. PETA 2D REAL-TIME
         // -------------------------------------------------------------
         function toggleMapModal() {
             const modal = document.getElementById('map-modal');
@@ -1033,25 +1403,15 @@
             const ctx = canvas.getContext('2d');
             const W = canvas.width;
             const H = canvas.height;
-            const worldSize = 230; // Skala peta (-115 s/d 115)
+            const worldSize = 230;
             const scale = W / worldSize;
 
             const toMapX = (wx) => (wx + worldSize / 2) * scale;
             const toMapY = (wz) => (wz + worldSize / 2) * scale;
 
-            // Background Hijau Medan Kota (Mirip peta satelit game)
             ctx.fillStyle = '#2d4a22';
             ctx.fillRect(0, 0, W, H);
 
-            // Grid Koordinat Peta
-            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-            ctx.lineWidth = 1;
-            for (let g = 0; g <= W; g += 44) {
-                ctx.beginPath(); ctx.moveTo(g, 0); ctx.lineTo(g, H); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, g); ctx.lineTo(W, g); ctx.stroke();
-            }
-
-            // Gambar Jaringan Jalan Kota
             ctx.fillStyle = '#57606f';
             for (let r = -2; r <= 2; r++) {
                 const pos = r * 42;
@@ -1059,7 +1419,6 @@
                 ctx.fillRect(0, toMapY(pos - 21) - 4, W, 8);
             }
 
-            // Gambar Gedung-gedung & Landmark
             mapBuildings.forEach(b => {
                 const mx = toMapX(b.x);
                 const my = toMapY(b.z);
@@ -1070,7 +1429,6 @@
                 ctx.fillRect(mx - mw / 2, my - md / 2, mw, md);
 
                 if (b.isLandmark) {
-                    // Lingkaran sorotan kuning seperti pada gambar referensi
                     ctx.beginPath();
                     ctx.arc(mx, my, 20, 0, Math.PI * 2);
                     ctx.fillStyle = 'rgba(241, 196, 15, 0.25)';
@@ -1079,7 +1437,6 @@
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
 
-                    // Label Nama Tempat
                     ctx.font = 'Bold 11px Arial';
                     ctx.fillStyle = '#ffffff';
                     ctx.textAlign = 'center';
@@ -1087,7 +1444,6 @@
                 }
             });
 
-            // Gambar Lokasi Terkini Player (Titik Merah & Arah Hadap)
             if (localPlayerObj) {
                 const px = toMapX(localPlayerObj.mesh.position.x);
                 const py = toMapY(localPlayerObj.mesh.position.z);
@@ -1095,13 +1451,11 @@
                 document.getElementById('map-coords').innerText =
                     `Lokasi Anda: X = ${Math.round(localPlayerObj.mesh.position.x)}, Z = ${Math.round(localPlayerObj.mesh.position.z)}`;
 
-                // Radar pulse
                 ctx.beginPath();
                 ctx.arc(px, py, 11, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(231, 76, 60, 0.35)';
                 ctx.fill();
 
-                // Titik Player
                 ctx.beginPath();
                 ctx.arc(px, py, 5.5, 0, Math.PI * 2);
                 ctx.fillStyle = '#ff3838';
