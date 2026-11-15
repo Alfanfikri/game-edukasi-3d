@@ -3,57 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Guru - Edit Soal Game Pembelajaran</title>
+    <title>Panel Guru - Kelola Soal Pembelajaran</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; }
-        .subject-section { margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        h3 { color: #3498db; text-transform: uppercase; }
-        textarea { width: 100%; height: 120px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 14px; }
-        button { background: #2ecc71; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; display: block; width: 100%; margin-top: 20px; }
-        button:hover { background: #27ae60; }
-        #status { text-align: center; margin-top: 10px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 25px; border-radius: 14px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; }
+        .top-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input[type="text"], input[type="number"], select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-add { background: #3498db; }
+        .btn-save { background: #2ecc71; width: 100%; font-size: 16px; padding: 14px; margin-top: 20px; }
+        .btn-del { background: #e74c3c; padding: 6px 10px; font-size: 12px; }
+        .subject-card { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 20px; background: #fafafa; }
+        .subject-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-bottom: 12px; }
+        .q-item { background: white; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; }
+        .q-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+        #status { text-align: center; font-weight: bold; margin-top: 12px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Panel Kontrol Guru (Edit Soal)</h1>
-        <p>Edit daftar pertanyaan, pilihan ganda, kunci jawaban, dan koin hadiah dalam format JSON di bawah ini:</p>
-        
-        <div class="subject-section">
-            <h3>Format Data Soal (JSON)</h3>
-            <textarea id="json-input"></textarea>
+        <h1>📚 Panel Kontrol Guru</h1>
+        <p class="subtitle">Atur Mata Pelajaran, Jumlah Soal, Pertanyaan, dan Hadiah Koin Siswa</p>
+
+        <div class="top-bar">
+            <input type="text" id="new-subject-name" placeholder="Nama Mapel Baru (misal: B. INDONESIA)" style="flex:1;" />
+            <button class="btn-add" onclick="addSubject()">+ Tambah Mata Pelajaran</button>
         </div>
 
-        <button onclick="saveQuestions()">Simpan Perubahan Soal</button>
+        <div id="subjects-container"></div>
+
+        <button class="btn-save" onclick="saveAll()">💾 Simpan & Terapkan ke Game Sekarang</button>
         <p id="status"></p>
     </div>
 
     <script>
-        fetch('/api/questions')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('json-input').value = JSON.stringify(data, null, 4);
-            });
+        let bank = {};
 
-        function saveQuestions() {
-            try {
-                const parsedData = JSON.parse(document.getElementById('json-input').value);
-                fetch('/api/questions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(parsedData)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('status.style.color'] = '#27ae60';
-                    document.getElementById('status').innerText = data.message;
+        fetch('/api/questions').then(r => r.json()).then(data => {
+            bank = data;
+            render();
+        });
+
+        function render() {
+            const container = document.getElementById('subjects-container');
+            container.innerHTML = '';
+
+            Object.keys(bank).forEach(subj => {
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <h3 style="margin:0; color:#2980b9;">Mata Pelajaran: ${subj} (${bank[subj].length} Soal)</h3>
+                        <div>
+                            <button class="btn-add" onclick="addQuestion('${subj}')">+ Tambah Soal</button>
+                            <button class="btn-del" onclick="deleteSubject('${subj}')">Hapus Mapel</button>
+                        </div>
+                    </div>
+                `;
+
+                bank[subj].forEach((item, idx) => {
+                    const qDiv = document.createElement('div');
+                    qDiv.className = 'q-item';
+                    qDiv.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <b>Soal #${idx + 1}</b>
+                            <button class="btn-del" onclick="deleteQuestion('${subj}', ${idx})">Hapus Soal</button>
+                        </div>
+                        <input type="text" value="${item.q}" onchange="bank['${subj}'][${idx}].q = this.value" placeholder="Tulis Pertanyaan..." style="width:100%; margin-bottom:8px;" />
+                        <div class="q-grid">
+                            <input type="text" value="${item.options[0]}" onchange="bank['${subj}'][${idx}].options[0] = this.value" placeholder="Pilihan A" />
+                            <input type="text" value="${item.options[1]}" onchange="bank['${subj}'][${idx}].options[1] = this.value" placeholder="Pilihan B" />
+                            <input type="text" value="${item.options[2]}" onchange="bank['${subj}'][${idx}].options[2] = this.value" placeholder="Pilihan C" />
+                        </div>
+                        <div style="margin-top:8px; display:flex; gap:15px; align-items:center;">
+                            <label>Kunci Jawaban:
+                                <select onchange="bank['${subj}'][${idx}].correct = this.value">
+                                    <option value="A" ${item.correct === 'A' ? 'selected' : ''}>A</option>
+                                    <option value="B" ${item.correct === 'B' ? 'selected' : ''}>B</option>
+                                    <option value="C" ${item.correct === 'C' ? 'selected' : ''}>C</option>
+                                </select>
+                            </label>
+                            <label>Hadiah Koin:
+                                <input type="number" value="${item.reward}" onchange="bank['${subj}'][${idx}].reward = parseInt(this.value)" style="width:80px;" />
+                            </label>
+                        </div>
+                    `;
+                    card.appendChild(qDiv);
                 });
-            } catch (e) {
-                document.getElementById('status').style.color = '#e74c3c';
-                document.getElementById('status').innerText = "Format JSON salah! Periksa kembali tanda kurung dan tanda kutip.";
+
+                container.appendChild(card);
+            });
+        }
+
+        function addSubject() {
+            const name = document.getElementById('new-subject-name').value.trim().toUpperCase();
+            if (!name) return alert("Masukkan nama mata pelajaran!");
+            if (!bank[name]) {
+                bank[name] = [{ q: "Contoh pertanyaan baru?", options: ["A. Jawaban 1", "B. Jawaban 2", "C. Jawaban 3"], correct: "A", reward: 50 }];
+                document.getElementById('new-subject-name').value = '';
+                render();
             }
+        }
+
+        function deleteSubject(subj) {
+            if (confirm(`Hapus mata pelajaran ${subj}?`)) {
+                delete bank[subj];
+                render();
+            }
+        }
+
+        function addQuestion(subj) {
+            bank[subj].push({ q: "Pertanyaan baru...", options: ["A. ...", "B. ...", "C. ..."], correct: "A", reward: 50 });
+            render();
+        }
+
+        function deleteQuestion(subj, idx) {
+            bank[subj].splice(idx, 1);
+            render();
+        }
+
+        function saveAll() {
+            fetch('/api/questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bank)
+            }).then(r => r.json()).then(res => {
+                const st = document.getElementById('status');
+                st.style.color = '#27ae60';
+                st.innerText = "✅ " + res.message;
+            });
         }
     </script>
 </body>
